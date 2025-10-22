@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ball Corporation - Share Information</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha384-KyZXEAg3QhqLMpG8r+Knujsl5/5hb7ie6Z4l5b5r5L5e5b5e5b5e5b5e5b5e5b5e" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function() {
+            function updatePage(data) {
+                $('#share-entity-name').text(data.entityName);
+                $('#share-max-value').text(data.max.val);
+                $('#share-max-fy').text(data.max.fy);
+                $('#share-min-value').text(data.min.val);
+                $('#share-min-fy').text(data.min.fy);
+                document.title = data.entityName + ' - Share Information';
+            }
+
+            function fetchData(cik) {
+                const url = `https://data.sec.gov/api/xbrl/companyconcept/CIK${cik}/dei/EntityCommonStockSharesOutstanding.json`;
+                $.ajax({
+                    url: url,
+                    method: 'GET',
+                    headers: { 'User-Agent': 'YourAppName/1.0' },
+                    success: function(response) {
+                        const entityName = response.entityName;
+                        const shares = response.units.shares.filter(entry => entry.fy > "2020" && !isNaN(entry.val));
+                        const max = shares.reduce((prev, current) => (prev.val > current.val) ? prev : current);
+                        const min = shares.reduce((prev, current) => (prev.val < current.val) ? prev : current);
+                        const data = {
+                            entityName: entityName,
+                            max: { val: max.val, fy: max.fy },
+                            min: { val: min.val, fy: min.fy }
+                        };
+                        updatePage(data);
+                    }
+                });
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const cik = urlParams.get('CIK') || '0000009389';
+            fetchData(cik);
+        });
+    </script>
+</head>
+<body>
+    <h1 id="share-entity-name">Ball Corporation</h1>
+    <div>
+        <h2>Maximum Shares Outstanding</h2>
+        <p>Value: <span id="share-max-value"></span></p>
+        <p>Fiscal Year: <span id="share-max-fy"></span></p>
+    </div>
+    <div>
+        <h2>Minimum Shares Outstanding</h2>
+        <p>Value: <span id="share-min-value"></span></p>
+        <p>Fiscal Year: <span id="share-min-fy"></span></p>
+    </div>
+</body>
+</html>
